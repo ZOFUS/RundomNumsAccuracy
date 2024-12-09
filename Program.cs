@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using OxyPlot;
-using OxyPlot.Series;
-using OxyPlot.WindowsForms;
 class RandomGenerators
 {
     private const long A = 22695477;
@@ -90,48 +87,39 @@ class RandomGenerators
             Console.WriteLine($" ({frequencies[i]:F4})");
         }
     }
-    /* Гистограмма
-    public static void PlotHistogram(double[] frequencies, int intervals)
-    {
-        var plotModel = new PlotModel { Title = "Гистограмма" };
-        var barSeries = new BarSeries { Title = "Частоты", StrokeColor = OxyColors.Black, FillColor = OxyColors.SkyBlue };
 
-        for (int i = 0; i < intervals; i++)
-        {
-            barSeries.Items.Add(new BarItem { Value = frequencies[i] });
-        }
-
-        plotModel.Series.Add(barSeries);
-        var plotView = new PlotView
-        {
-            Model = plotModel
-        };
-
-        // Отобразить график в отдельном окне
-        var form = new System.Windows.Forms.Form
-        {
-            Text = "Гистограмма",
-            Width = 800,
-            Height = 600
-        };
-        form.Controls.Add(plotView);
-        plotView.Dock = System.Windows.Forms.DockStyle.Fill;
-        form.ShowDialog();
-    }
-    */
     // Задание №6: Расчет критерия Пирсона
-    public static double CalculateChiSquare(double[] frequencies, int sampleSize, int intervals)
+    // Функция для расчета вероятностей попадания в j-й интервал
+    static double[] CalculateProbabilities(int intervals, double minValue, double maxValue)
+    {
+        double[] probabilities = new double[intervals];
+        double intervalLength = (maxValue - minValue) / intervals;
+
+        for (int j = 0; j < intervals; j++)
+        {
+            double lowerBound = minValue + j * intervalLength;
+            double upperBound = minValue + (j + 1) * intervalLength;
+            probabilities[j] = (upperBound - lowerBound) / (maxValue - minValue);
+        }
+        return probabilities;
+    }
+
+    // Функция для расчета критерия Пирсона
+    public static double CalculateChiSquare(int n, double[] observedFrequencies, double[] expectedFrequencies)
     {
         double chiSquare = 0;
-        double expectedFrequency = (double)sampleSize / intervals;
-
-        foreach (var freq in frequencies)
+        for (int i = 0; i < observedFrequencies.Length; i++)
         {
-            chiSquare += Math.Pow(freq * sampleSize - expectedFrequency, 2) / expectedFrequency;
+            if (expectedFrequencies[i] > 0)
+            {
+                double difference = observedFrequencies[i] - expectedFrequencies[i];
+                chiSquare += (difference * difference) / expectedFrequencies[i];
+            }
         }
-
         return chiSquare;
     }
+
+
 
     // Задание №7: Генерации чисел с использованием встроенного генератора случайных чисел
     public static List<double> GenerateRandomNumbers(int length, double min, double max)
@@ -145,6 +133,22 @@ class RandomGenerators
         }
 
         return numbers;
+    }
+
+    // Функция для расчета математического ожидания (среднего)
+    public static double CalculateMean(List<double> numbers)
+    {
+        double sum = numbers.Sum();
+        return sum / numbers.Count;
+    }
+
+
+    // Функция для расчета дисперсии
+    public static double CalculateVariance(List<double> numbers)
+    {
+        double mean = CalculateMean(numbers);
+        double variance = numbers.Select(x => (x - mean) * (x - mean)).Average();
+        return variance;
     }
 
     public static void Main()
@@ -189,15 +193,21 @@ class RandomGenerators
             Console.WriteLine("Гистограмма относительных частот:");
             PrintTextHistogram(frequencies, intervals);
 
-            // Расчет критерия Пирсона
-            double chiSquare = CalculateChiSquare(frequencies, length, intervals);
-            Console.WriteLine($"Критерий Пирсона: {chiSquare:F4}");
-        }
+            // Расчет вероятностей для каждого интервала
+            double[] probabilities = CalculateProbabilities(intervals, 0, 10);
 
+            // Расчет критерия Пирсона
+            double chiSquare = CalculateChiSquare(length, frequencies, probabilities);
+            Console.WriteLine($"Критерий Пирсона: {chiSquare:F4}");
+
+        }
+        Console.WriteLine("\nАнализ с генератором случайных чисел:");
         // Повтор анализа для встроенного генератора
         foreach (var length in lengths)
         {
             Console.WriteLine($"\nДлина последовательности: {length}");
+
+            // Генерация случайных чисел с использованием встроенного генератора
             var numbers = GenerateRandomNumbers(length, 0, 10);
 
             // Расчет частот
@@ -207,9 +217,21 @@ class RandomGenerators
             Console.WriteLine("Гистограмма относительных частот:");
             PrintTextHistogram(frequencies, intervals);
 
+            // Расчет вероятностей для каждого интервала
+            double[] probabilities = CalculateProbabilities(intervals, 0, 10);
+
             // Расчет критерия Пирсона
-            double chiSquare = CalculateChiSquare(frequencies, length, intervals);
+            double chiSquare = CalculateChiSquare(length, frequencies, probabilities);
             Console.WriteLine($"Критерий Пирсона: {chiSquare:F4}");
+
+            // Расчет математического ожидания и дисперсии
+            double mean = CalculateMean(numbers);
+            double variance = CalculateVariance(numbers);
+            double stdDev = Math.Sqrt(variance);
+
+            Console.WriteLine($"Математическое ожидание (среднее): {mean:F4}");
+            Console.WriteLine($"Дисперсия: {variance:F4}");
+            Console.WriteLine($"Стандартное отклонение: {stdDev:F4}");
         }
     }
 }
